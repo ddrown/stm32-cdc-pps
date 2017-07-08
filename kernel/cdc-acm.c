@@ -331,6 +331,21 @@ static void acm_ctrl_irq(struct urb *urb)
 
 		newctrl = get_unaligned_le16(data);
 
+		// check DCD state first, to get a PPS timestamp closer to the event
+		if((newctrl & ACM_CTRL_DCD) != (acm->ctrlin & ACM_CTRL_DCD)) {
+			struct tty_struct *tty = tty_port_tty_get(&acm->port);
+			if(tty) {
+			       struct tty_ldisc *ld = tty_ldisc_ref(tty);
+
+			       if (ld) {
+				      if (ld->ops->dcd_change)
+					     ld->ops->dcd_change(tty, newctrl & ACM_CTRL_DCD);
+				      tty_ldisc_deref(ld);
+			       }
+			}
+		}
+
+		// if we lost DCD and clocal isn't set, call hangup
 		if (!acm->clocal && (acm->ctrlin & ~newctrl & ACM_CTRL_DCD)) {
 			dev_dbg(&acm->control->dev,
 				"%s - calling hangup\n", __func__);
