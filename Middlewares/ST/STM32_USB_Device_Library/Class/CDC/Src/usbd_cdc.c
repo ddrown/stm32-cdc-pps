@@ -161,7 +161,7 @@ USBD_ClassTypeDef  USBD_CDC =
   USBD_CDC_Init,
   USBD_CDC_DeInit,
   USBD_CDC_Setup,
-  NULL,
+  NULL,                 /* EP0_TxSent, */
   USBD_CDC_EP0_RxReady,
   USBD_CDC_DataIn,
   USBD_CDC_DataOut,
@@ -706,6 +706,8 @@ static uint8_t  USBD_CDC_DataOut (USBD_HandleTypeDef *pdev, uint8_t epnum)
   }
 }
 
+
+
 /**
   * @brief  USBD_CDC_EP0_RxReady
   *         Data received on control endpoint
@@ -721,7 +723,8 @@ static uint8_t  USBD_CDC_EP0_RxReady (USBD_HandleTypeDef *pdev)
     ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Control(hcdc->CmdOpCode,
                                                       (uint8_t *)hcdc->data,
                                                       hcdc->CmdLength);
-    hcdc->CmdOpCode = 0xFF;  // reset the OpCode back to 0xFF
+    hcdc->CmdOpCode = 0xFF;
+      
   }
   return USBD_OK;
 }
