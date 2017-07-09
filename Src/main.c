@@ -122,7 +122,7 @@ int main(void)
   while (1)
   {
     uint32_t millis, ms;
-    static char print_buffer[30];
+    static char print_buffer[40];
     char *p;
   /* USER CODE END WHILE */
 
@@ -134,11 +134,16 @@ int main(void)
     pps_capture.sent_time = serial_last_cmd_ts.ack_time;
     pps_capture.sent_milli = serial_last_cmd_ts.ack_millis;
 
-    millis = pps_capture.sent_time - pps_capture.irq_time; // TODO - adjust for cap
+    millis = pps_capture.sent_time - pps_capture.irq_time;
     ms = serial_last_cmd_ts.ack_millis - pps_capture.irq_milli;
 
     millis = millis / 72; // 72MHz
-    utoa(millis, print_buffer, 10);
+    strcpy(print_buffer, "INT "); 
+    p = print_buffer + strlen(print_buffer);
+    utoa(pps_capture.sent_time, p, 10);
+    strcat(print_buffer, " ");
+    p = print_buffer + strlen(print_buffer);
+    utoa(millis, p, 10);
     strcat(print_buffer, " ");
     p = print_buffer + strlen(print_buffer);
     utoa(ms, p, 10);
@@ -146,6 +151,7 @@ int main(void)
     CDC_Transmit_FS((uint8_t *)print_buffer, strlen(print_buffer));
 
     CDC_Transmit_serial_state(0);
+    last_pps_capture = pps_capture.irq_milli;
   }
   /* USER CODE END 3 */
 

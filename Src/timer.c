@@ -37,8 +37,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
   pps_capture.cap_tim1 = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
   CDC_Transmit_serial_state(CDC_SERIAL_STATE_DCD);
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-  
-  utoa(pps_capture.irq_milli, print_buffer, 10);
+ 
+  strcpy(print_buffer, "TIM "); 
+  p = print_buffer + strlen(print_buffer);
+  utoa(pps_capture.irq_milli, p, 10);
   strcat(print_buffer, " ");
   p = print_buffer + strlen(print_buffer);
   utoa(pps_capture.irq_time, p, 10);
