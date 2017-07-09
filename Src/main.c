@@ -51,7 +51,8 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "timer.h"
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -112,17 +113,39 @@ int main(void)
   MX_TIM2_Init();
 
   /* USER CODE BEGIN 2 */
-
+  timer_start();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint32_t last_pps_capture = pps_capture.irq_milli;
   while (1)
   {
+    uint32_t millis, ms;
+    static char print_buffer[30];
+    char *p;
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+    while(last_pps_capture == pps_capture.irq_milli) {} // wait for a capture
 
+    while((HAL_GetTick() - pps_capture.irq_milli) < 50) {} // wait 50ms, then clear DCD
+
+    pps_capture.sent_time = serial_last_cmd_ts.ack_time;
+    pps_capture.sent_milli = serial_last_cmd_ts.ack_millis;
+
+    millis = pps_capture.sent_time - pps_capture.irq_time; // TODO - adjust for cap
+    ms = serial_last_cmd_ts.ack_millis - pps_capture.irq_milli;
+
+    millis = millis / 72; // 72MHz
+    utoa(millis, print_buffer, 10);
+    strcat(print_buffer, " ");
+    p = print_buffer + strlen(print_buffer);
+    utoa(ms, p, 10);
+    strcat(p, "\r\n");
+    CDC_Transmit_FS((uint8_t *)print_buffer, strlen(print_buffer));
+
+    CDC_Transmit_serial_state(0);
   }
   /* USER CODE END 3 */
 

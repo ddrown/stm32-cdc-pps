@@ -63,7 +63,6 @@
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 
-
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
   * @{
   */
@@ -332,7 +331,7 @@ __ALIGN_BEGIN uint8_t USBD_CDC_CfgFSDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
   0x03,                           /* bmAttributes: Interrupt */
   LOBYTE(CDC_CMD_PACKET_SIZE),     /* wMaxPacketSize: */
   HIBYTE(CDC_CMD_PACKET_SIZE),
-  0x10,                           /* bInterval: */ 
+  0x01,                           /* bInterval: */ 
   /*---------------------------------------------------------------------------*/
   
   /*Data class interface descriptor*/
@@ -530,6 +529,7 @@ static uint8_t  USBD_CDC_Init (USBD_HandleTypeDef *pdev,
     /* Init Xfer states */
     hcdc->TxState =0;
     hcdc->RxState =0;
+    hcdc->CMDState =0;
        
     if(pdev->dev_speed == USBD_SPEED_HIGH  ) 
     {      
@@ -664,18 +664,21 @@ static uint8_t  USBD_CDC_Setup (USBD_HandleTypeDef *pdev,
 static uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
   USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef*) pdev->pClassData;
-  
-  if(pdev->pClassData != NULL)
-  {
-    
+  if(hcdc == NULL)
+    return USBD_FAIL;
+ 
+  if(epnum == (CDC_IN_EP & 0x7F)) { 
     hcdc->TxState = 0;
-
+    return USBD_OK;
+  } else if(epnum == (CDC_CMD_EP & 0x7F)) {
+    USBD_CDC_ItfTypeDef *user_funcs = (USBD_CDC_ItfTypeDef *)pdev->pUserData;
+    if(user_funcs && user_funcs->CMDDone)
+      user_funcs->CMDDone();
+    hcdc->CMDState = 0;
     return USBD_OK;
   }
-  else
-  {
-    return USBD_FAIL;
-  }
+
+  return USBD_FAIL;
 }
 
 /**

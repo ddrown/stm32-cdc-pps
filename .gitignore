@@ -6,3 +6,4 @@ kernel/*.mod.c
 kernel/modules.order
 kernel/Module.symvers
 build/
+.*.swp

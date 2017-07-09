@@ -49,6 +49,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
+#include "timer.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -104,6 +105,16 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+static struct serial_state {
+  uint8_t  bmRequestType;
+  uint8_t  bNotification;
+  uint16_t wValue;
+  uint16_t wIndex;
+  uint16_t wLength;
+  uint16_t state;
+} serial_state_msg;
+
+volatile struct serial_last_cmd_ts_t serial_last_cmd_ts;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -130,6 +141,35 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
+static void CDC_CMDDone  (void);
+/**
+  * @brief  CDC_Transmit_serial_state
+  *         Sends the new serial state to the host
+  * @param  newstate: new state of CDC_SERIAL_STATE* flags
+  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
+  */
+uint8_t CDC_Transmit_serial_state(uint16_t newstate) {
+  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+
+  if(hcdc == NULL)
+    return USBD_FAIL;
+
+  if(hcdc->CMDState != 0)
+    return USBD_BUSY;
+
+  /* CMD Transfer in progress */
+  hcdc->CMDState = 1;
+
+  serial_state_msg.bmRequestType = 0xA1;
+  serial_state_msg.bNotification = 0x20;
+  serial_state_msg.wValue = 0;
+  serial_state_msg.wIndex = 0; // interface
+  serial_state_msg.wLength = 2;
+  serial_state_msg.state = newstate;
+  USBD_LL_Transmit(&hUsbDeviceFS, CDC_CMD_EP, (uint8_t *)&serial_state_msg, 10);
+
+  return USBD_OK;
+}
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -141,7 +181,8 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
   CDC_Init_FS,
   CDC_DeInit_FS,
   CDC_Control_FS,  
-  CDC_Receive_FS
+  CDC_Receive_FS,
+  CDC_CMDDone
 };
 
 /* Private functions ---------------------------------------------------------*/
@@ -266,33 +307,9 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static struct serial_state {
-  uint8_t  bmRequestType;
-  uint8_t  bNotification;                           
-  uint16_t wValue;
-  uint16_t wIndex;
-  uint16_t wLength;
-  uint8_t  byte1;
-  uint8_t  byte2;
-} serial_state_msg;
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  serial_state_msg.bmRequestType = 0xA1;
-  serial_state_msg.bNotification = 0x20;
-  serial_state_msg.wValue = 0;
-  serial_state_msg.wIndex = 0;
-  serial_state_msg.wLength = 2;
-  serial_state_msg.byte2 = 0;
-  if(*Len == 1 && Buf[0] == 'a') {
-    serial_state_msg.byte1 = 0b00000001;
-    USBD_LL_Transmit(&hUsbDeviceFS, CDC_CMD_EP, (uint8_t *)&serial_state_msg, 10);
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-  } else if(*Len == 1 && Buf[0] == 'b') {
-    serial_state_msg.byte1 = 0b00000000;
-    USBD_LL_Transmit(&hUsbDeviceFS, CDC_CMD_EP, (uint8_t *)&serial_state_msg, 10);
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-  }
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
@@ -325,6 +342,17 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+/**
+  * @brief  CDC_CMDDone
+  *         Data sent over the CMD endpoint is sent
+  *                 
+  * @param  none
+  * @retval none
+  */
+static void CDC_CMDDone(void) {
+  serial_last_cmd_ts.ack_time = get_counters();
+  serial_last_cmd_ts.ack_millis = HAL_GetTick();
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
