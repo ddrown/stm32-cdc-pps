@@ -1,0 +1,6 @@
+Revision history for Perl extension ppsclient.
+
+0.01  Sat Jul  8 20:38:43 2017
+	- original version; created by h2xs 1.23 with options
+		-A -n ppsclient
+

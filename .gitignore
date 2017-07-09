@@ -7,3 +7,9 @@ kernel/modules.order
 kernel/Module.symvers
 build/
 .*.swp
+ppsclient/MYMETA.*
+ppsclient/Makefile
+ppsclient/blib
+ppsclient/pm_to_blib
+ppsclient/ppsclient.bs
+ppsclient/ppsclient.c
