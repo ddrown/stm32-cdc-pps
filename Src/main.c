@@ -53,6 +53,7 @@
 /* USER CODE BEGIN Includes */
 #include "timer.h"
 #include "usbd_cdc_if.h"
+#include "uart.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,7 +64,6 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,44 +114,66 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   timer_start();
+  start_rx_uart();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint32_t last_pps_capture = pps_capture.irq_milli;
-  while (1)
-  {
-    uint32_t millis, ms;
-    static char print_buffer[40];
+  uint32_t lastFlush = 0;
+  while (1) {
+    static char int_print_buffer[64];
     char *p;
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-    while(last_pps_capture == pps_capture.irq_milli) {} // wait for a capture
+    while(last_pps_capture == pps_capture.irq_milli) { // wait for a capture
+      if(((HAL_GetTick() - lastFlush) > 10) && ((HAL_GetTick() - last_uartData) > 10)) {
+        flush_uart();
+        lastFlush = HAL_GetTick();
+      }
+    }
 
-    while((HAL_GetTick() - pps_capture.irq_milli) < 50) {} // wait 50ms, then clear DCD
+    while((HAL_GetTick() - pps_capture.irq_milli) < 10) {} // wait 10ms, then clear DCD
 
     pps_capture.sent_time = serial_last_cmd_ts.ack_time;
     pps_capture.sent_milli = serial_last_cmd_ts.ack_millis;
 
-    millis = pps_capture.sent_time - pps_capture.irq_time;
-    ms = serial_last_cmd_ts.ack_millis - pps_capture.irq_milli;
+    strcpy(int_print_buffer, "$INT,"); 
+    p = int_print_buffer + strlen(int_print_buffer);
+    utoa(pps_capture.irq_time, p, 10);
 
-    millis = millis / 72; // 72MHz
-    strcpy(print_buffer, "INT "); 
-    p = print_buffer + strlen(print_buffer);
+    strcat(int_print_buffer, ",");
+    p = int_print_buffer + strlen(int_print_buffer);
+    utoa(pps_capture.cap_tim1, p, 10);
+
+    strcat(int_print_buffer, ",");
+    p = int_print_buffer + strlen(int_print_buffer);
     utoa(pps_capture.sent_time, p, 10);
-    strcat(print_buffer, " ");
-    p = print_buffer + strlen(print_buffer);
-    utoa(millis, p, 10);
-    strcat(print_buffer, " ");
-    p = print_buffer + strlen(print_buffer);
-    utoa(ms, p, 10);
+
+    uint8_t checksum = 0;
+    for(uint8_t i = 0; i < strlen(int_print_buffer); i++) {
+      if(int_print_buffer[i] != '$') {
+        checksum = checksum ^ int_print_buffer[i];
+      }
+    }
+
+    strcat(p, "*");
+    p = int_print_buffer + strlen(int_print_buffer);
+    utoa(checksum, p, 16);
+    strupr(p); // utoa is lowercase, checksum should be upper case
+
     strcat(p, "\r\n");
-    CDC_Transmit_FS((uint8_t *)print_buffer, strlen(print_buffer));
 
     CDC_Transmit_serial_state(0);
     last_pps_capture = pps_capture.irq_milli;
+
+    while((HAL_GetTick() - last_uartData) < 25) {} // wait for uart to be free for 25ms
+    if(flush_uart()) {
+      lastFlush = HAL_GetTick();
+      HAL_Delay(10);
+    }
+    CDC_Transmit_FS((uint8_t *)int_print_buffer, strlen(int_print_buffer));
   }
   /* USER CODE END 3 */
 

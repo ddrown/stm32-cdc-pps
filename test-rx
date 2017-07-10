@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+
+use strict;
+
+while(<>) {
+  if(/^\$([^,]+,.*)\*([0-9A-F]+)[\r\n]+$/s) {
+    my ($str,$checksum) = ($1,$2);
+    my $compare = 0;
+    for(my $i = 0; $i < length($str); $i++) {
+      $compare = $compare ^ ord(substr($str,$i,1));
+    }
+    my $compare_checksum = sprintf("%02X", $compare);
+    if($compare_checksum ne $checksum) {
+      print "$str $checksum != $compare_checksum\n";
+    }
+  } else {
+    print "??? $_";
+  }
+}

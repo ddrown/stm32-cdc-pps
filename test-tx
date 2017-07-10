@@ -1,0 +1,10 @@
+#!/usr/bin/perl
+
+use strict;
+
+while(1) {
+  for(my $i = ord("0"); $i <= ord("z"); $i++) {
+    print chr($i);
+  }
+  print "\r\n";
+}

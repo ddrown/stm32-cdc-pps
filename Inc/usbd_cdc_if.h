@@ -108,6 +108,9 @@
   * @{
   */ 
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
+extern USBD_HandleTypeDef hUsbDeviceFS;
+extern uint8_t UserRxBufferFS[];
+extern uint8_t UserTxBufferFS[];
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
 extern volatile struct serial_last_cmd_ts_t {

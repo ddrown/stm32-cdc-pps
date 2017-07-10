@@ -78,7 +78,8 @@ Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
-Src/timer.c
+Src/timer.c \
+Src/uart.c
 
 # ASM sources
 ASM_SOURCES =  \

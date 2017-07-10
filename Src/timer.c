@@ -28,25 +28,10 @@ void timer_start() {
   HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
 }
 
-static char print_buffer[40];
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-  char *p;
-
   pps_capture.irq_milli = HAL_GetTick();
   pps_capture.irq_time = get_counters();
   pps_capture.cap_tim1 = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
   CDC_Transmit_serial_state(CDC_SERIAL_STATE_DCD);
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
- 
-  strcpy(print_buffer, "TIM "); 
-  p = print_buffer + strlen(print_buffer);
-  utoa(pps_capture.irq_milli, p, 10);
-  strcat(print_buffer, " ");
-  p = print_buffer + strlen(print_buffer);
-  utoa(pps_capture.irq_time, p, 10);
-  strcat(print_buffer, " ");
-  p = print_buffer + strlen(print_buffer);
-  utoa(pps_capture.cap_tim1, p, 10);
-  strcat(print_buffer, "\r\n");
-  CDC_Transmit_FS((uint8_t *)print_buffer, strlen(print_buffer));
 }
