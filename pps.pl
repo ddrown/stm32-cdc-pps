@@ -4,6 +4,8 @@ use strict;
 use ppsclient;
 use IO::File;
 use Getopt::Long;
+use FindBin;
+use lib "$FindBin::Bin";
 use NTP::ntpd::64;
 
 my(%config) = (
