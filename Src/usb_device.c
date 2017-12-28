@@ -85,7 +85,9 @@ void disconnect_usb() {
 /* init function */				        
 void MX_USB_DEVICE_Init(void)
 {
+#ifdef DEVELOPING_USB
   disconnect_usb();
+#endif
 
   /* Init Device Library,Add Supported Class and Start the library*/
   USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);

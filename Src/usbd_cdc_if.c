@@ -268,8 +268,13 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
   /*******************************************************************************/
   case CDC_SET_LINE_CODING:   
     if(length == 7) {
-      // TODO: apply line coding here
-      //USBD_CDC_LineCodingTypeDef *new_line_coding = (USBD_CDC_LineCodingTypeDef *)pbuf;
+      USBD_CDC_LineCodingTypeDef *new_line_coding = (USBD_CDC_LineCodingTypeDef *)pbuf;
+      UART_NAME.Init.BaudRate = new_line_coding->bitrate;
+      // ignoring Stop Bits, Parity, and Data Bits
+      if (HAL_UART_Init(&UART_NAME) != HAL_OK) {
+        _Error_Handler(__FILE__, __LINE__);
+      }
+      start_rx_uart();
     }
     break;
 
