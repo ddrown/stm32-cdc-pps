@@ -63,6 +63,7 @@
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 
+
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
   * @{
   */
@@ -679,6 +680,7 @@ static uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum)
   }
 
   return USBD_FAIL;
+
 }
 
 /**
@@ -726,7 +728,7 @@ static uint8_t  USBD_CDC_EP0_RxReady (USBD_HandleTypeDef *pdev)
     ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Control(hcdc->CmdOpCode,
                                                       (uint8_t *)hcdc->data,
                                                       hcdc->CmdLength);
-    hcdc->CmdOpCode = 0xFF;
+      hcdc->CmdOpCode = 0xFF; 
       
   }
   return USBD_OK;
