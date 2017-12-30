@@ -125,6 +125,7 @@ int main(void)
   while (1) {
     static char int_print_buffer[64];
     char *p;
+    uint16_t ch1_mod, ch2_mod;
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -140,13 +141,18 @@ int main(void)
     pps_capture.sent_time = serial_last_cmd_ts.ack_time;
     pps_capture.sent_milli = serial_last_cmd_ts.ack_millis;
 
+    ch1_mod = pps_capture.irq_time; // mod 65536
+    ch2_mod = pps_capture.ch2_irq_time; // mod 65536
+    ch1_mod = ch1_mod - pps_capture.cap_tim3;
+    ch2_mod = ch2_mod - pps_capture.ch2_cap_tim3;
+
     strcpy(int_print_buffer, "$INT,"); // 4
     p = int_print_buffer + strlen(int_print_buffer);
-    utoa(pps_capture.irq_time, p, 10); // 4+10=14
+    utoa(pps_capture.irq_time - ch1_mod, p, 10); // 4+10=14
 
     strcat(int_print_buffer, ","); // 14+1=15
     p = int_print_buffer + strlen(int_print_buffer);
-    utoa(pps_capture.cap_tim3, p, 10); // 15+5=20
+    utoa(ch1_mod, p, 10); // 15+5=20
 
     strcat(int_print_buffer, ","); // 20+1=21
     p = int_print_buffer + strlen(int_print_buffer);
@@ -154,11 +160,11 @@ int main(void)
 
     strcat(int_print_buffer, ","); // 31+1=32
     p = int_print_buffer + strlen(int_print_buffer);
-    utoa(pps_capture.ch2_irq_time, p, 10); // 32+5=37
+    utoa(pps_capture.ch2_irq_time - ch2_mod, p, 10); // 32+5=37
 
     strcat(int_print_buffer, ","); // 37+1=38
     p = int_print_buffer + strlen(int_print_buffer);
-    utoa(pps_capture.ch2_cap_tim3, p, 10); // 38+10=48
+    utoa(ch2_mod, p, 10); // 38+10=48
 
     strcat(int_print_buffer, ","); // 48+1=49
     p = int_print_buffer + strlen(int_print_buffer);
