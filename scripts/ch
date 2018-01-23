@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+use strict;
+
+sub circle_subtract {
+  my($x,$y,$max) = @_;
+
+  my $diff = $x - $y;
+  if($diff < 0) {
+    $diff += $max;
+  }
+  return $diff;
+}
+
+$| = 1;
+
+my($lastcount) = 0;
+my($ch1_last,$ch2_last);
+while(<>) {
+  if(/INT,(\d+),(\d+),(\d+),(\d+),(\d+),([0-9A-F]+)\*/) {
+    my($full_1,$mod_1,$usb,$full_2,$mod_2,$count_2) = ($1,$2,$3,$4,$5,$6);
+    $count_2 = hex($count_2);
+    my $diffcount = $count_2 - $lastcount;
+    if($diffcount < 0) {
+      $diffcount += 256;
+    }
+    my($diff_1) = circle_subtract($full_1, $ch1_last, 2**32);
+    my($diff_2) = circle_subtract($full_2, $ch2_last, 2**32);
+    my $s_1 = int($diff_1 / 72000000 + 0.5);
+    my $s_2 = int($diff_2 / 72000000 + 0.5);
+    $s_1 = 1 if($s_1 == 0);
+    $s_2 = 1 if($s_2 == 0);
+    my $f1 = ($diff_1/$s_1-72000000)/72;
+    my $f2 = ($diff_2/$s_2-72000000)/72;
+    printf("%u %.9f %u %d %u %d %u %.3f %.3f %.3f\n", time(), ($full_2 - $full_1)/72000000, $full_1, $mod_1, $full_2, $mod_2, $diffcount, $f1, $f2, $f1-$f2);
+    $lastcount = $count_2;
+    $ch1_last = $full_1;
+    $ch2_last = $full_2;
+  }
+}
